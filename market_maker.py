@@ -54,14 +54,14 @@ else:
         
 BP                  = 1e-4      # one basis point
 BTC_SYMBOL          = 'btc'
-CONTRACT_SIZE       = 1000     # USD
+CONTRACT_SIZE       = 10     # USD
 COV_RETURN_CAP      = 100       # cap on variance for vol estimate
 DECAY_POS_LIM       = 0.1       # position lim decay factor toward expiry
 EWMA_WGT_COV        = 4         # parameter in % points for EWMA volatility estimate
 EWMA_WGT_LOOPTIME   = 0.1       # parameter for EWMA looptime estimate
 FORECAST_RETURN_CAP = 20        # cap on returns for vol estimate
 LOG_LEVEL           = logging.INFO
-MIN_ORDER_SIZE      = 10
+MIN_ORDER_SIZE      = 50
 MAX_LAYERS          =  5        # max orders to layer the ob with on each side
 MKT_IMPACT          =  0.5      # base 1-sided spread between bid/offer
 NLAGS               =  2        # number of lags in time series
@@ -244,7 +244,7 @@ class MarketMaker( object ):
                 }, 
                 multiple = 100, title = 'Vols' )
             print( '\nMean Loop Time: %s' % round( self.mean_looptime, 2 ))
-            
+            self.cancelall()
         print( '' )
 
         
@@ -343,7 +343,8 @@ class MarketMaker( object ):
                         
                     if i < len_bid_ords:    
 
-                        oid = bid_ords[ i ][ 'orderId' ]
+                        oid = bid_ords[ i ]['info']['side']['orderId']
+                        print(oid)
                         try:
                             self.client.editOrder( oid, qty, prc )
                         except (SystemExit, KeyboardInterrupt):
@@ -381,7 +382,8 @@ class MarketMaker( object ):
                     qty = round( prc * qtybtc / con_sz ) / spot
                     
                     if i < len_ask_ords:
-                        oid = ask_ords[ i ][ 'orderId' ]
+                        oid = ask_ords[ i ]['info']['side']['orderId']
+                        print(oid)
                         try:
                             self.client.editOrder( oid, qty, prc )
                         except (SystemExit, KeyboardInterrupt):
@@ -422,7 +424,7 @@ class MarketMaker( object ):
         for order in ords:
             #print(order)
             oid = order ['info'] ['orderId']
-            #print(order)
+           # print(order)
             try:
                 self.client.cancelOrder( oid , 'BTC/USDT' )
             except Exception as e:
