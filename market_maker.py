@@ -179,7 +179,7 @@ class MarketMaker( object ):
         
     def get_pct_delta( self ):         
         self.update_status()
-        return sum( self.deltas.values()) / self.equity_btc
+        return sum( self.deltas.values()) / float(self.equity_btc)
 
     
     def get_spot( self ):
@@ -228,9 +228,10 @@ class MarketMaker( object ):
             }, 
             roundto = 2, title = 'Deltas' )
         
+        #print(self.positions)
         print_dict_of_dicts( {
             k: {
-                'Contracts': self.positions[ k ][ 'size' ]
+                'Contracts': self.positions[ k ][ 'positionAmt' ]
             } for k in self.positions.keys()
             }, 
             title = 'Positions' )
@@ -259,7 +260,7 @@ class MarketMaker( object ):
             account         = self.client.fetchBalance()
             spot            = self.get_spot()
             bal_btc         = float(account[ 'info' ] [ 'totalMarginBalance' ]) / spot 
-            pos             = self.positions[ fut ][ 'sizeBtc' ]
+            pos             = float(self.positions[ fut ][ 'positionAmt' ])
             pos_lim_long    = bal_btc * PCT_LIM_LONG * 125 #/ len(self.futures)
             pos_lim_short   = bal_btc * PCT_LIM_SHORT * 125 #/ len(self.futures)
             #print(pos_lim_long)
@@ -539,7 +540,7 @@ class MarketMaker( object ):
         self.update_positions()
                 
         self.deltas = OrderedDict( 
-            { k: self.positions[ k ][ 'sizeBtc' ] for k in self.futures.keys()}
+            { k: float(self.positions[ k ][ 'positionAmt' ]) for k in self.futures.keys()}
         )
         self.deltas[ BTC_SYMBOL ] = float(account[ 'info' ] [ 'totalMarginBalance' ])         
         
@@ -548,16 +549,17 @@ class MarketMaker( object ):
 
         self.positions  = OrderedDict( { f: {
             'size':         0,
-            'sizeBtc':      0,
+            'positionAmt':      0,
             'indexPrice':   None,
             'markPrice':    None
         } for f in self.futures.keys() } )
         positions       = self.client.fapiPrivateGetPositionRisk()
-
+        #print('lala')
+        #print(positions)
         
         for pos in positions:
-            if pos[ 'symbol' ] in self.futures:
-                self.positions[ pos[ 'symbol' ]] = pos
+            if 'BTC/USDT' in self.futures:
+                self.positions[ 'BTC/USDT'] = pos
         
     
     def update_timeseries( self ):
