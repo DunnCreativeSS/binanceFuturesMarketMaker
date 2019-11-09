@@ -54,7 +54,7 @@ else:
         
 BP                  = 1e-4      # one basis point
 BTC_SYMBOL          = 'btc'
-CONTRACT_SIZE       = 10        # USD
+CONTRACT_SIZE       = 1000     # USD
 COV_RETURN_CAP      = 100       # cap on variance for vol estimate
 DECAY_POS_LIM       = 0.1       # position lim decay factor toward expiry
 EWMA_WGT_COV        = 4         # parameter in % points for EWMA volatility estimate
@@ -66,8 +66,8 @@ MAX_LAYERS          =  5        # max orders to layer the ob with on each side
 MKT_IMPACT          =  0.5      # base 1-sided spread between bid/offer
 NLAGS               =  2        # number of lags in time series
 PCT                 = 100 * BP  # one percentage point
-PCT_LIM_LONG        = 50       # % position limit long
-PCT_LIM_SHORT       = 50       # % position limit short
+PCT_LIM_LONG        = 200    # % position limit long
+PCT_LIM_SHORT       = 100       # % position limit short
 PCT_QTY_BASE        = 100       # pct order qty in bps as pct of acct on each order
 MIN_LOOP_TIME       =   0.2       # Minimum time between loops
 RISK_CHARGE_VOL     =   0.25    # vol risk charge in bps per 100 vol
@@ -260,8 +260,8 @@ class MarketMaker( object ):
             spot            = self.get_spot()
             bal_btc         = float(account[ 'info' ] [ 'totalMarginBalance' ]) / spot 
             pos             = self.positions[ fut ][ 'sizeBtc' ]
-            pos_lim_long    = bal_btc * PCT_LIM_LONG #/ len(self.futures)
-            pos_lim_short   = bal_btc * PCT_LIM_SHORT #/ len(self.futures)
+            pos_lim_long    = bal_btc * PCT_LIM_LONG * 125 #/ len(self.futures)
+            pos_lim_short   = bal_btc * PCT_LIM_SHORT * 125 #/ len(self.futures)
             #print(pos_lim_long)
             #expi            = self.futures[ fut ][ 'expi_dt' ]
             #tte             = max( 0, ( expi - datetime.utcnow()).total_seconds() / SECONDS_IN_DAY )
@@ -273,8 +273,9 @@ class MarketMaker( object ):
             pos_lim_long    = max( 0, pos_lim_long  )
             pos_lim_short   = max( 0, pos_lim_short )
             
-            min_order_size_btc = MIN_ORDER_SIZE / spot * CONTRACT_SIZE
-            qtybtc  = max( PCT_QTY_BASE  * bal_btc, min_order_size_btc)
+            min_order_size_btc = (MIN_ORDER_SIZE * CONTRACT_SIZE) / spot
+            qtybtc  = max( PCT_QTY_BASE  * bal_btc, min_order_size_btc) 
+
             nbids   = min( math.trunc( pos_lim_long  / qtybtc ), MAX_LAYERS )
             nasks   = min( math.trunc( pos_lim_short / qtybtc ), MAX_LAYERS )
             
@@ -282,7 +283,7 @@ class MarketMaker( object ):
             place_asks = nasks > 0
             
             if not place_bids and not place_asks:
-                print( 'No bid no offer for %s' % fut, pos_lim_long )
+                print( 'No bid no offer for %s' % fut, min_order_size_btc )
                 continue
                 
             tsz = float(self.get_ticksize( fut ))            
@@ -406,21 +407,30 @@ class MarketMaker( object ):
 
 
             if nbids < len( bid_ords ):
-                cancel_oids += [ o[ 'orderId' ] for o in bid_ords[ nbids : ]]
+                cancel_oids += [ o['info']['side']['orderId'] for o in bid_ords[ nbids : ]]
             if nasks < len( ask_ords ):
-                cancel_oids += [ o[ 'orderId' ] for o in ask_ords[ nasks : ]]
+                cancel_oids += [ o['info']['side']['orderId'] for o in ask_ords[ nasks : ]]
             for oid in cancel_oids:
                 try:
-                    self.client.cancelOrder( oid )
+                    self.client.cancelOrder( oid , 'BTC/USDT' )
                 except:
                     self.logger.warn( 'Order cancellations failed: %s' % oid )
                                         
-    
+    def cancelall(self):
+        ords        = self.client.fetchOpenOrders( 'BTC/USDT' )
+        for order in ords:
+            #print(order)
+            oid = order ['info'] ['orderId']
+            #print(order)
+            try:
+                self.client.cancelOrder( oid , 'BTC/USDT' )
+            except Exception as e:
+                print(e)
     def restart( self ):        
         try:
             strMsg = 'RESTARTING'
             print( strMsg )
-            #self.client.cancelall()
+            self.cancelall()
             strMsg += ' '
             for i in range( 0, 5 ):
                 strMsg += '.'
@@ -494,7 +504,7 @@ class MarketMaker( object ):
     def run_first( self ):
         
         self.create_client()
-        #self.client.cancelall()
+        self.cancelall()
         self.logger = get_logger( 'root', LOG_LEVEL )
         # Get all futures contracts
         self.get_futures()
@@ -616,7 +626,7 @@ if __name__ == '__main__':
         mmbot.run()
     except( KeyboardInterrupt, SystemExit ):
         print( "Cancelling open orders" )
-        #mmbot.client.cancelall()
+        mmbot.cancelall()
         sys.exit()
     except:
         print( traceback.format_exc())
