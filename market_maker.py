@@ -349,17 +349,8 @@ class MarketMaker( object ):
                             self.client.editOrder( oid, qty, prc )
                         except (SystemExit, KeyboardInterrupt):
                             raise
-                        except:
-                            try:
-                                self.client.createOrder(  fut, "Limit" ,'buy', qty, prc)
-                                cancel_oids.append( oid )
-                                self.logger.warn( 'Edit failed for %s' % oid )
-                            except (SystemExit, KeyboardInterrupt):
-                                raise
-                            except Exception as e:
-                                print(e)
-                                self.logger.warn( 'Bid order failed: %s bid for %s'
-                                                % ( prc, qty ))
+                        except Excetion as e:
+                            print(e)
                     else:
                         try:
                             self.client.createOrder(  fut, "Limit", 'buy', qty, prc)
@@ -388,16 +379,8 @@ class MarketMaker( object ):
                             self.client.editOrder( oid, qty, prc )
                         except (SystemExit, KeyboardInterrupt):
                             raise
-                        except:
-                            try:
-                                self.client.createOrder( fut, "Limit", 'sell', qty, prc)
-                                cancel_oids.append( oid )
-                                self.logger.warn( 'sell Edit failed for %s' % oid )
-                            except (SystemExit, KeyboardInterrupt):
-                                raise
-                            except Exception as e:
-                                self.logger.warn( 'Offer order failed: %s at %s'
-                                                % ( qty, prc ))
+                        except Exeption as e:
+                            print(e)
 
                     else:
                         try:
