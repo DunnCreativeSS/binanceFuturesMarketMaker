@@ -66,8 +66,8 @@ MAX_LAYERS          =  5        # max orders to layer the ob with on each side
 MKT_IMPACT          =  0.5      # base 1-sided spread between bid/offer
 NLAGS               =  2        # number of lags in time series
 PCT                 = 100 * BP  # one percentage point
-PCT_LIM_LONG        = 100       # % position limit long
-PCT_LIM_SHORT       = 200       # % position limit short
+PCT_LIM_LONG        = 50       # % position limit long
+PCT_LIM_SHORT       = 50       # % position limit short
 PCT_QTY_BASE        = 100       # pct order qty in bps as pct of acct on each order
 MIN_LOOP_TIME       =   0.2       # Minimum time between loops
 RISK_CHARGE_VOL     =   0.25    # vol risk charge in bps per 100 vol
@@ -112,11 +112,16 @@ class MarketMaker( object ):
     
     def create_client( self ):
         #self.client = RestClient( KEY, SECRET, URL )
-        binance_futures = ccxt.binance{{    apiKey: '5HaqY5eVWEyPaubcF9yTsvZyl0RatPvCZmnDB5HhxK4d4renDXN1JnpLOfasOkZG',
-    secret: 'ZkR1p0ERhrL0RsEBowmkB1oeVM8kJgxpLpxPISeMS2hrZYIyRnzcc9DJDRTLMv1W',
-"options":{"defaultMarket":"futures"}}}
-        self.client2 = ccxt.binance{{    apiKey: '5HaqY5eVWEyPaubcF9yTsvZyl0RatPvCZmnDB5HhxK4d4renDXN1JnpLOfasOkZG',
-    secret: 'ZkR1p0ERhrL0RsEBowmkB1oeVM8kJgxpLpxPISeMS2hrZYIyRnzcc9DJDRTLMv1W'}}
+        binance_futures = ccxt.binance(
+            {"apiKey": "W58pdOrINzXJCE3HXOgM8eY5f5UhJwoLhyO2eyftGvTZO6RKEVUgWzx8l3kh673o",
+            "secret": "GLWOH6kOcraAatmbysPXCzY96JOepMC8bo970s69lfPjmbo0DqGkF0hfgketSpQq",
+            "options":{"defaultMarket":"futures"},
+            'urls': {'api': {
+                                     'public': 'https://fapi.binance.com/fapi/v1',
+                                     'private': 'https://fapi.binance.com/fapi/v1',},}
+ })
+        self.client2 = ccxt.binance({    "apiKey": "W58pdOrINzXJCE3HXOgM8eY5f5UhJwoLhyO2eyftGvTZO6RKEVUgWzx8l3kh673o",
+    "secret": "GLWOH6kOcraAatmbysPXCzY96JOepMC8bo970s69lfPjmbo0DqGkF0hfgketSpQq"})
         self.client = binance_futures
 
     
@@ -128,8 +133,9 @@ class MarketMaker( object ):
         asks    = ob[ 'asks' ]
         
         ords        = self.client.fetchOpenOrders( contract )
-        bid_ords    = [ o for o in ords if o[ 'direction' ] == 'buy'  ]
-        ask_ords    = [ o for o in ords if o[ 'direction' ] == 'sell' ]
+        #print(ords)
+        bid_ords    = [ o for o in ords if o ['info'] [ 'side' ] == 'buy'  ]
+        ask_ords    = [ o for o in ords if o ['info'] [ 'side' ] == 'sell' ]
         best_bid    = None
         best_ask    = None
 
@@ -137,20 +143,20 @@ class MarketMaker( object ):
         
         for b in bids:
             match_qty   = sum( [ 
-                o[ 'quantity' ] for o in bid_ords 
-                if math.fabs( b[ 'price' ] - o[ 'price' ] ) < err
+                o[1] for o in bid_ords 
+                if math.fabs( b[0] - o[0] ) < err
             ] )
-            if match_qty < b[ 'quantity' ]:
-                best_bid = b[ 'price' ]
+            if match_qty < b[1]:
+                best_bid = b[0]
                 break
         
         for a in asks:
             match_qty   = sum( [ 
-                o[ 'quantity' ] for o in ask_ords 
-                if math.fabs( a[ 'price' ] - o[ 'price' ] ) < err
+                o[1] for o in ask_ords 
+                if math.fabs( a[0] - o[0] ) < err
             ] )
-            if match_qty < a[ 'quantity' ]:
-                best_ask = a[ 'price' ]
+            if match_qty < a[1]:
+                best_ask = a[0]
                 break
         
         return { 'bid': best_bid, 'ask': best_ask }
@@ -160,15 +166,15 @@ class MarketMaker( object ):
         
         self.futures_prv    = cp.deepcopy( self.futures )
         insts               = self.client.fetchMarkets()
-        print(insts)
+        #print(insts[0])
         self.futures        = sort_by_key( { 
-            i[ 'instrumentName' ]: i for i in insts  if i[ 'kind' ] == 'future' 
+            i[ 'symbol' ]: i for i in insts 
         } )
-        
-        for k, v in self.futures.items():
-            self.futures[ k ][ 'expi_dt' ] = datetime.strptime( 
-                                                v[ 'expiration' ][ : -4 ], 
-                                                '%Y-%m-%d %H:%M:%S' )
+        #print(self.futures)
+        #for k, v in self.futures.items():
+            #self.futures[ k ][ 'expi_dt' ] = datetime.strptime( 
+            #                                   v[ 'expiration' ][ : -4 ], 
+            #                                   '%Y-%m-%d %H:%M:%S' )
                         
         
     def get_pct_delta( self ):         
@@ -177,15 +183,16 @@ class MarketMaker( object ):
 
     
     def get_spot( self ):
-        return self.client2.fetchTicker()[ 'BTCUSDT' ]
+        print(self.client2.fetchTicker( 'BTC/USDT' )['bid'])
+        return self.client2.fetchTicker( 'BTC/USDT' )['bid']
 
     
     def get_precision( self, contract ):
-        return self.futures[ contract ][ 'pricePrecision' ]
+        return self.futures[ contract ] ['info'] [ 'pricePrecision' ]
 
     
     def get_ticksize( self, contract ):
-        return self.futures[ contract ][ 'tickSize' ]
+        return self.futures[ contract ] ['info'] ['filters'] [ 0 ] [ 'tickSize' ]
     
     
     def output_status( self ):
@@ -251,13 +258,14 @@ class MarketMaker( object ):
             
             account         = self.client.fetchBalance()
             spot            = self.get_spot()
-            bal_btc         = account[ 'equity' ]
+            bal_btc         = float(account[ 'info' ] [ 'totalMarginBalance' ]) / spot 
             pos             = self.positions[ fut ][ 'sizeBtc' ]
-            pos_lim_long    = bal_btc * PCT_LIM_LONG / len(self.futures)
-            pos_lim_short   = bal_btc * PCT_LIM_SHORT / len(self.futures)
-            expi            = self.futures[ fut ][ 'expi_dt' ]
-            tte             = max( 0, ( expi - datetime.utcnow()).total_seconds() / SECONDS_IN_DAY )
-            pos_decay       = 1.0 - math.exp( -DECAY_POS_LIM * tte )
+            pos_lim_long    = bal_btc * PCT_LIM_LONG #/ len(self.futures)
+            pos_lim_short   = bal_btc * PCT_LIM_SHORT #/ len(self.futures)
+            #print(pos_lim_long)
+            #expi            = self.futures[ fut ][ 'expi_dt' ]
+            #tte             = max( 0, ( expi - datetime.utcnow()).total_seconds() / SECONDS_IN_DAY )
+            pos_decay       = 1.0 - math.exp( -DECAY_POS_LIM * 8035200 )
             pos_lim_long   *= pos_decay
             pos_lim_short  *= pos_decay
             pos_lim_long   -= pos
@@ -277,7 +285,7 @@ class MarketMaker( object ):
                 print( 'No bid no offer for %s' % fut, pos_lim_long )
                 continue
                 
-            tsz = self.get_ticksize( fut )            
+            tsz = float(self.get_ticksize( fut ))            
             # Perform pricing
             vol = max( self.vols[ BTC_SYMBOL ], self.vols[ fut ] )
 
@@ -302,7 +310,7 @@ class MarketMaker( object ):
             
             if place_bids:
                 
-                bid_ords        = [ o for o in ords if o[ 'direction' ] == 'buy'  ]
+                bid_ords        = [ o for o in ords if o['info']['side'] == 'buy'  ]
                 len_bid_ords    = min( len( bid_ords ), nbids )
                 bid0            = mid_mkt * math.exp( -MKT_IMPACT )
                 
@@ -312,7 +320,7 @@ class MarketMaker( object ):
                 
             if place_asks:
                 
-                ask_ords        = [ o for o in ords if o[ 'direction' ] == 'sell' ]    
+                ask_ords        = [ o for o in ords if o['info']['side'] == 'sell' ]    
                 len_ask_ords    = min( len( ask_ords ), nasks )
                 ask0            = mid_mkt * math.exp(  MKT_IMPACT )
                 
@@ -329,7 +337,7 @@ class MarketMaker( object ):
                     else:
                         prc = bids[ 0 ]
 
-                    qty = round( prc * qtybtc / con_sz )                        
+                    qty = round( prc * qtybtc / con_sz )   / spot                     
                         
                     if i < len_bid_ords:    
 
@@ -340,20 +348,22 @@ class MarketMaker( object ):
                             raise
                         except:
                             try:
-                                self.client.createOrder(  fut, 'limit' ,'BUY', qty, prc, 'true' )
+                                self.client.createOrder(  fut, "Limit" ,'buy', qty, prc)
                                 cancel_oids.append( oid )
                                 self.logger.warn( 'Edit failed for %s' % oid )
                             except (SystemExit, KeyboardInterrupt):
                                 raise
                             except Exception as e:
+                                print(e)
                                 self.logger.warn( 'Bid order failed: %s bid for %s'
                                                 % ( prc, qty ))
                     else:
                         try:
-                            self.client.createOrder(  fut, 'limit', 'BUY', qty, prc, 'true' )
+                            self.client.createOrder(  fut, "Limit", 'buy', qty, prc)
                         except (SystemExit, KeyboardInterrupt):
                             raise
                         except Exception as e:
+                            print(e)
                             self.logger.warn( 'Bid order failed: %s bid for %s'
                                                 % ( prc, qty ))
 
@@ -366,7 +376,7 @@ class MarketMaker( object ):
                     else:
                         prc = asks[ 0 ]
                         
-                    qty = round( prc * qtybtc / con_sz )
+                    qty = round( prc * qtybtc / con_sz ) / spot
                     
                     if i < len_ask_ords:
                         oid = ask_ords[ i ][ 'orderId' ]
@@ -376,9 +386,9 @@ class MarketMaker( object ):
                             raise
                         except:
                             try:
-                                self.client.createOrder( fut, 'limit', 'SELL', qty, prc, 'true' )
+                                self.client.createOrder( fut, "Limit", 'sell', qty, prc)
                                 cancel_oids.append( oid )
-                                self.logger.warn( 'Sell Edit failed for %s' % oid )
+                                self.logger.warn( 'sell Edit failed for %s' % oid )
                             except (SystemExit, KeyboardInterrupt):
                                 raise
                             except Exception as e:
@@ -387,7 +397,7 @@ class MarketMaker( object ):
 
                     else:
                         try:
-                            self.client.createOrder(  fut, 'limit', 'SELL', qty, prc, 'true' )
+                            self.client.createOrder(  fut, "Limit", 'sell', qty, prc)
                         except (SystemExit, KeyboardInterrupt):
                             raise
                         except Exception as e:
@@ -512,7 +522,8 @@ class MarketMaker( object ):
         account = self.client.fetchBalance()
         spot    = self.get_spot()
 
-        self.equity_btc = account[ 'equity' ]
+        #print(account)  
+        self.equity_btc = float(account[ 'info' ] [ 'totalMarginBalance' ]) / spot
         self.equity_usd = self.equity_btc * spot
                 
         self.update_positions()
@@ -520,7 +531,7 @@ class MarketMaker( object ):
         self.deltas = OrderedDict( 
             { k: self.positions[ k ][ 'sizeBtc' ] for k in self.futures.keys()}
         )
-        self.deltas[ BTC_SYMBOL ] = account[ 'equity' ]        
+        self.deltas[ BTC_SYMBOL ] = float(account[ 'info' ] [ 'totalMarginBalance' ])         
         
         
     def update_positions( self ):
@@ -531,14 +542,12 @@ class MarketMaker( object ):
             'indexPrice':   None,
             'markPrice':    None
         } for f in self.futures.keys() } )
-        positions       = self.client.private_get_position({
-    'filter': self.exchange.json({"isOpen":"true", "symbol":"BTCUSDT"})
-})
+        positions       = self.client.fapiPrivateGetPositionRisk()
 
         
         for pos in positions:
-            if pos[ 'instrument' ] in self.futures:
-                self.positions[ pos[ 'instrument' ]] = pos
+            if pos[ 'symbol' ] in self.futures:
+                self.positions[ pos[ 'symbol' ]] = pos
         
     
     def update_timeseries( self ):
