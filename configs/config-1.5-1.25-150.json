@@ -1,0 +1,1 @@
+{"RISK_CHARGE_VOL": {"current": 1.5, "max": 4, "step": 1, "min": 1}, "VOL_PRIOR": {"current": 150, "max": 300, "step": 50, "min": 50}, "EWMA_WGT_COV": {"current": 1.25, "max": 4, "step": 1, "min": 1}}
