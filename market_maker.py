@@ -61,16 +61,16 @@ EWMA_WGT_COV        = 4         # parameter in % points for EWMA volatility esti
 EWMA_WGT_LOOPTIME   = 0.1       # parameter for EWMA looptime estimate
 FORECAST_RETURN_CAP = 20        # cap on returns for vol estimate
 LOG_LEVEL           = logging.INFO
-MIN_ORDER_SIZE      = 50
+MIN_ORDER_SIZE      = 75
 MAX_LAYERS          =  5        # max orders to layer the ob with on each side
-MKT_IMPACT          =  0.5      # base 1-sided spread between bid/offer
+MKT_IMPACT          =  0.01   # base 1-sided spread between bid/offer
 NLAGS               =  2        # number of lags in time series
 PCT                 = 100 * BP  # one percentage point
 PCT_LIM_LONG        = 200    # % position limit long
 PCT_LIM_SHORT       = 100       # % position limit short
-PCT_QTY_BASE        = 100       # pct order qty in bps as pct of acct on each order
-MIN_LOOP_TIME       =   0.2       # Minimum time between loops
-RISK_CHARGE_VOL     =   0.25    # vol risk charge in bps per 100 vol
+PCT_QTY_BASE        = 0.05       # pct order qty in bps as pct of acct on each order
+MIN_LOOP_TIME       =   14.6     # Minimum time between loops
+RISK_CHARGE_VOL     =   1.5    # vol risk charge in bps per 100 vol
 SECONDS_IN_DAY      = 3600 * 24
 SECONDS_IN_YEAR     = 365 * SECONDS_IN_DAY
 WAVELEN_MTIME_CHK   = 15        # time in seconds between check for file change
@@ -123,6 +123,7 @@ class MarketMaker( object ):
         self.client2 = ccxt.binance({    "apiKey": "W58pdOrINzXJCE3HXOgM8eY5f5UhJwoLhyO2eyftGvTZO6RKEVUgWzx8l3kh673o",
     "secret": "GLWOH6kOcraAatmbysPXCzY96JOepMC8bo970s69lfPjmbo0DqGkF0hfgketSpQq"})
         self.client = binance_futures
+        #print(dir(self.client))           
 
     
     def get_bbo( self, contract ): # Get best b/o excluding own orders
@@ -183,7 +184,7 @@ class MarketMaker( object ):
 
     
     def get_spot( self ):
-        print(self.client2.fetchTicker( 'BTC/USDT' )['bid'])
+        #print(self.client2.fetchTicker( 'BTC/USDT' )['bid'])
         return self.client2.fetchTicker( 'BTC/USDT' )['bid']
 
     
@@ -275,7 +276,8 @@ class MarketMaker( object ):
             pos_lim_short   = max( 0, pos_lim_short )
             
             min_order_size_btc = (MIN_ORDER_SIZE * CONTRACT_SIZE) / spot
-            qtybtc  = max( PCT_QTY_BASE  * bal_btc, min_order_size_btc) 
+            print(min_order_size_btc) #0.0006833471711135484 0.08546200188472201
+            qtybtc  = bal_btc * 125
 
             nbids   = min( math.trunc( pos_lim_long  / qtybtc ), MAX_LAYERS )
             nasks   = min( math.trunc( pos_lim_short / qtybtc ), MAX_LAYERS )
