@@ -1,0 +1,1 @@
+{"RISK_CHARGE_VOL": {"current": 2, "max": 4, "step": 1, "min": 1}, "DECAY_POS_LIM": {"current": 1, "max": 4, "step": 1, "min": 1}, "VOL_PRIOR": {"current": 100, "max": 300, "step": 50, "min": 50}, "EWMA_WGT_COV": {"current": 2, "max": 4, "step": 1, "min": 1}}
