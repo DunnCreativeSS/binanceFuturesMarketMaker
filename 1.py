@@ -43,8 +43,8 @@ parser.add_argument( '--no-restart',
 args    = parser.parse_args()
 
 if not args.use_prod:
-    KEY     = ''
-    SECRET  = ''
+    KEY     = 'kvO9kczy'
+    SECRET  = 'WBL-3GdS4aEdwwSxNVJEgVar_-JInKRBjmK4Yl8xDIc'
     URL     = 'https://test.deribit.com'
 else:
     KEY     = ''

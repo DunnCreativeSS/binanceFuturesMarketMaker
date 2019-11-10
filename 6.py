@@ -43,8 +43,8 @@ parser.add_argument( '--no-restart',
 args    = parser.parse_args()
 
 if not args.use_prod:
-    KEY     = ''
-    SECRET  = ''
+    KEY     = 'CZzs_s8d'
+    SECRET  = 'io7UW_JlhJ-fgi-J-hN0Lc2gHz9YYKAgRoyFAcoDgWA'
     URL     = 'https://test.deribit.com'
 else:
     KEY     = ''
@@ -78,7 +78,7 @@ WAVELEN_OUT         = 15        # time in seconds between output to terminal
 WAVELEN_TS          = 15        # time in seconds between time series update
 VOL_PRIOR           = 100       # vol estimation starting level in percentage pts
 
-with open('configs/1.json') as json_file:
+with open('configs/6.json') as json_file:
     data = json.load(json_file)
     RISK_CHARGE_VOL = data['RISK_CHARGE_VOL']['current']
     EWMA_WGT_COV = data['EWMA_WGT_COV']['current']
