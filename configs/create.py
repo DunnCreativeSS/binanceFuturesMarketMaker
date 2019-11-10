@@ -1,12 +1,12 @@
 import json
-a = 1
-b = 1
-c = 50
-d = 1
-while a <= 3:
-	while b <= 3:
+a = 1.25
+b = 1.25
+c = 75
+d = 1.25
+while a <= 2.5:
+	while b <= 2.5:
 		while c <= 150:
-			while d <= 3:
+			while d <= 2.5:
 				json2 = {
 "RISK_CHARGE_VOL": {"current": a, "min": 1, "max": 4, "step": 1},
 "EWMA_WGT_COV": {"current": b, "min": 1, "max": 4, "step": 1},
@@ -15,11 +15,11 @@ while a <= 3:
 }
 				with open('config-' + str(a) + '-' + str(b) + '-' + str(c) + '-' + str(d) + '.json', 'w') as outfile:
    					json.dump(json2, outfile)
-				d = d + 1
+				d = d * 2
 				print(a)
-			d = 1	
-			c = c + 50
+			d = 1
+			c = c * 2
 		c = 50
-		b = b + 1
+		b = b * 2
 	b = 1
-	a = a + 1
+	a = a * 2
